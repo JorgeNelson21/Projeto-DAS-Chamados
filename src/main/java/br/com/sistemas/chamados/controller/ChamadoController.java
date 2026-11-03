@@ -1,8 +1,12 @@
 package br.com.sistemas.chamados.controller;
 
 import java.net.URI;
-import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,20 +16,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.PagedModel;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import br.com.sistemas.chamados.entity.Prioridade;
-import br.com.sistemas.chamados.entity.StatusChamado;
 import br.com.sistemas.chamados.dto.AlterarStatusRequest;
 import br.com.sistemas.chamados.dto.AtribuirTecnicoRequest;
+import br.com.sistemas.chamados.dto.ChamadoDetalheResponse;
 import br.com.sistemas.chamados.dto.ChamadoRequest;
 import br.com.sistemas.chamados.dto.ChamadoResponse;
+import br.com.sistemas.chamados.dto.ComentarioRequest;
+import br.com.sistemas.chamados.dto.ComentarioResponse;
+import br.com.sistemas.chamados.entity.Prioridade;
+import br.com.sistemas.chamados.entity.StatusChamado;
 import br.com.sistemas.chamados.service.ChamadoService;
+import br.com.sistemas.chamados.service.ComentarioService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -33,9 +37,11 @@ import jakarta.validation.Valid;
 public class ChamadoController {
 
     private final ChamadoService service;
+    private final ComentarioService comentarioService;
 
-    public ChamadoController(ChamadoService service) {
+    public ChamadoController(ChamadoService service, ComentarioService comentarioService) {
         this.service = service;
+        this.comentarioService = comentarioService;
     }
 
     @PostMapping
@@ -56,7 +62,7 @@ public class ChamadoController {
     }
 
     @GetMapping("/{id}")
-    public ChamadoResponse buscar(@PathVariable Long id) {
+    public ChamadoDetalheResponse buscar(@PathVariable Long id) {
         return service.buscar(id);
     }
 
@@ -85,5 +91,12 @@ public class ChamadoController {
         @PathVariable Long id,
         @Valid @RequestBody AlterarStatusRequest dto) {
         return service.alterarStatus(id, dto);
+    }
+
+    @PostMapping("/{id}/comentarios")
+    public ResponseEntity<ComentarioResponse> comentar(
+        @PathVariable Long id,
+        @Valid @RequestBody ComentarioRequest dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(comentarioService.comentar(id, dto));
     }
 }

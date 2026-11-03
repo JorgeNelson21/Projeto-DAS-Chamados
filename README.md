@@ -15,7 +15,7 @@ API para gestão de chamados de suporte, desenvolvida na disciplina **DAS – De
 controller  → recebe HTTP, valida entrada (@Valid) e devolve status/resposta
 service     → regras de negócio e transações (@Transactional)
 repository  → acesso a dados (Spring Data JPA)
-entity      → mapeamento objeto-relacional
+entity      → mapeamento objeto-relacional e relacionamentos (@ManyToOne / @OneToMany)
 dto         → contrato de entrada/saída da API
 exception   → exceções de domínio e padronização de erros (GlobalExceptionHandler)
 ```
@@ -79,11 +79,12 @@ A API sobe em `http://localhost:8080`.
 |---|---|---|---|
 | POST | `/chamados` | Abrir chamado | 201 |
 | GET | `/chamados` | Listar com filtros e paginação | 200 |
-| GET | `/chamados/{id}` | Buscar por ID | 200 |
+| GET | `/chamados/{id}` | Detalhe do chamado com comentários | 200 |
 | PUT | `/chamados/{id}` | Atualizar dados | 200 |
-| DELETE | `/chamados/{id}` | Excluir | 204 |
+| DELETE | `/chamados/{id}` | Excluir (remove também os comentários) | 204 |
 | PATCH | `/chamados/{id}/atribuir` | Atribuir técnico | 200 |
 | PATCH | `/chamados/{id}/status` | Alterar status | 200 |
+| POST | `/chamados/{id}/comentarios` | Adicionar comentário | 201 |
 
 ## Exemplos de requisição
 
@@ -117,6 +118,39 @@ curl -i -X PATCH http://localhost:8080/chamados/1/atribuir \
 curl -i -X PATCH http://localhost:8080/chamados/1/status \
   -H "Content-Type: application/json" \
   -d '{"status":"FECHADO"}'
+```
+
+### Comentar chamado
+
+```bash
+curl -i -X POST http://localhost:8080/chamados/1/comentarios \
+  -H "Content-Type: application/json" \
+  -d '{"texto":"Verificando o cabo de energia.","autor":"Carlos Lima"}'
+```
+
+### Detalhe do chamado
+
+```bash
+curl -i http://localhost:8080/chamados/1
+```
+
+Resposta (comentários em ordem cronológica):
+
+```json
+{
+  "chamado": {
+    "id": 1,
+    "titulo": "Impressora não liga",
+    "status": "ABERTO",
+    "clienteNome": "Ana Souza",
+    "categoriaNome": "Hardware",
+    "...": "..."
+  },
+  "comentarios": [
+    { "id": 1, "texto": "Verificando o cabo de energia.", "data": "2026-11-03T17:40:56", "autor": "Carlos Lima" },
+    { "id": 2, "texto": "Cabo substituído, impressora ligou.", "data": "2026-11-03T17:41:02", "autor": "Carlos Lima" }
+  ]
+}
 ```
 
 ## Consultas com filtros e paginação
@@ -173,6 +207,9 @@ Formato da resposta paginada:
 - Um chamado não pode voltar para `ABERTO` nem receber o mesmo status atual.
 - Ao fechar, `dataFechamento` é preenchida automaticamente.
 - Chamado `FECHADO` não pode ser alterado, nem receber técnico.
+- Chamado `FECHADO` não aceita novos comentários.
+- A data do comentário é preenchida automaticamente; comentários não são editáveis.
+- Ao excluir um chamado, seus comentários são excluídos junto.
 - Cliente, categoria ou técnico com chamados vinculados não pode ser excluído.
 
 ## Códigos HTTP
