@@ -32,6 +32,22 @@ exception   → exceções de domínio e padronização de erros (GlobalExceptio
 
 A API sobe em `http://localhost:8080`.
 
+### Testes automatizados
+
+```bash
+# Windows (PowerShell)
+.\mvnw clean test
+
+# macOS / Linux
+./mvnw clean test
+```
+
+| Classe | Tipo | O que cobre |
+|---|---|---|
+| `ClienteRepositoryTest` | `@DataJpaTest` | Queries derivadas e restrição de e-mail único no banco |
+| `ChamadoRepositoryTest` | `@DataJpaTest` | Filtros combinados, paginação e vínculo com cliente |
+| `ClienteControllerTest` | `@WebMvcTest` | Criação (201), validação (400), duplicidade (409) e não encontrado (404) |
+
 ### H2 Console
 
 - URL: `http://localhost:8080/h2-console`
