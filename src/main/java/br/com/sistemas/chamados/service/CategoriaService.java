@@ -11,14 +11,17 @@ import br.com.sistemas.chamados.entity.Categoria;
 import br.com.sistemas.chamados.exception.RecursoNaoEncontradoException;
 import br.com.sistemas.chamados.exception.RegraNegocioException;
 import br.com.sistemas.chamados.repository.CategoriaRepository;
+import br.com.sistemas.chamados.repository.ChamadoRepository;
 
 @Service
 public class CategoriaService {
 
     private final CategoriaRepository repository;
+    private final ChamadoRepository chamadoRepository;
 
-    public CategoriaService(CategoriaRepository repository) {
+    public CategoriaService(CategoriaRepository repository, ChamadoRepository chamadoRepository) {
         this.repository = repository;
+        this.chamadoRepository = chamadoRepository;
     }
 
     @Transactional
@@ -53,7 +56,11 @@ public class CategoriaService {
 
     @Transactional
     public void excluir(Long id) {
-        repository.delete(buscarEntity(id));
+        Categoria categoria = buscarEntity(id);
+        if (chamadoRepository.existsByCategoriaId(id)) {
+            throw new RegraNegocioException("Categoria " + id + " possui chamados e não pode ser excluída");
+        }
+        repository.delete(categoria);
     }
 
     private Categoria buscarEntity(Long id) {
