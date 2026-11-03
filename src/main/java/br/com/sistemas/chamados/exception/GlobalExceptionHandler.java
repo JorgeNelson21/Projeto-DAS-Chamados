@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.data.core.PropertyReferenceException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -28,6 +28,12 @@ public class GlobalExceptionHandler {
             .map(e -> e.getField() + ": " + e.getDefaultMessage())
             .toList();
         return montar(HttpStatus.BAD_REQUEST, "Dados inválidos", detalhes);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErroResposta> ordenacaoInvalida(PropertyReferenceException ex) {
+        return montar(HttpStatus.BAD_REQUEST, "Parâmetro de ordenação inválido",
+            List.of(ex.getMessage()));
     }
 
     private ResponseEntity<ErroResposta> montar(

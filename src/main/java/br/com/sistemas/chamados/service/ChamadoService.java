@@ -1,31 +1,33 @@
 package br.com.sistemas.chamados.service;
 
-import java.util.List;
 import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.sistemas.chamados.dto.AlterarStatusRequest;
+import br.com.sistemas.chamados.dto.AtribuirTecnicoRequest;
 import br.com.sistemas.chamados.dto.ChamadoRequest;
 import br.com.sistemas.chamados.dto.ChamadoResponse;
 import br.com.sistemas.chamados.entity.Categoria;
 import br.com.sistemas.chamados.entity.Chamado;
 import br.com.sistemas.chamados.entity.Cliente;
+import br.com.sistemas.chamados.entity.Prioridade;
+import br.com.sistemas.chamados.entity.StatusChamado;
+import br.com.sistemas.chamados.entity.Tecnico;
 import br.com.sistemas.chamados.exception.RecursoNaoEncontradoException;
+import br.com.sistemas.chamados.exception.RegraNegocioException;
 import br.com.sistemas.chamados.repository.CategoriaRepository;
 import br.com.sistemas.chamados.repository.ChamadoRepository;
 import br.com.sistemas.chamados.repository.ClienteRepository;
-import br.com.sistemas.chamados.dto.AlterarStatusRequest;
-import br.com.sistemas.chamados.dto.AtribuirTecnicoRequest;
-import br.com.sistemas.chamados.entity.StatusChamado;
-import br.com.sistemas.chamados.entity.Tecnico;
-import br.com.sistemas.chamados.exception.RegraNegocioException;
 import br.com.sistemas.chamados.repository.TecnicoRepository;
 
 @Service
 public class ChamadoService {
 
-       private final ChamadoRepository repository;
+    private final ChamadoRepository repository;
     private final ClienteRepository clienteRepository;
     private final CategoriaRepository categoriaRepository;
     private final TecnicoRepository tecnicoRepository;
@@ -50,8 +52,18 @@ public class ChamadoService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChamadoResponse> listar() {
-        return repository.findAll().stream().map(ChamadoResponse::de).toList();
+    public Page<ChamadoResponse> listar(StatusChamado status, Prioridade prioridade,
+                                        Long clienteId, Pageable pageable) {
+        return repository.filtrar(status, prioridade, clienteId, pageable)
+            .map(ChamadoResponse::de);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChamadoResponse> listarPorCliente(Long clienteId, Pageable pageable) {
+        if (!clienteRepository.existsById(clienteId)) {
+            throw new RecursoNaoEncontradoException("Cliente " + clienteId + " não encontrado");
+        }
+        return repository.findByClienteId(clienteId, pageable).map(ChamadoResponse::de);
     }
 
     @Transactional(readOnly = true)
@@ -59,7 +71,7 @@ public class ChamadoService {
         return ChamadoResponse.de(buscarEntity(id));
     }
 
-     @Transactional
+    @Transactional
     public ChamadoResponse atualizar(Long id, ChamadoRequest dto) {
         Chamado chamado = buscarEntity(id);
         validarNaoFechado(chamado);
@@ -76,7 +88,7 @@ public class ChamadoService {
         repository.delete(buscarEntity(id));
     }
 
-        @Transactional
+    @Transactional
     public ChamadoResponse atribuirTecnico(Long id, AtribuirTecnicoRequest dto) {
         Chamado chamado = buscarEntity(id);
         validarNaoFechado(chamado);                                   // R1
@@ -114,17 +126,11 @@ public class ChamadoService {
         return ChamadoResponse.de(chamado);
     }
 
-        private void validarNaoFechado(Chamado chamado) {
+    private void validarNaoFechado(Chamado chamado) {
         if (chamado.getStatus() == StatusChamado.FECHADO) {
             throw new RegraNegocioException(
                 "Chamado " + chamado.getId() + " está fechado e não pode ser alterado");
         }
-    }
-
-    private Tecnico buscarTecnico(Long id) {
-        return tecnicoRepository.findById(id)
-            .orElseThrow(() -> new RecursoNaoEncontradoException(
-                "Técnico " + id + " não encontrado"));
     }
 
     private Chamado buscarEntity(Long id) {
@@ -143,5 +149,11 @@ public class ChamadoService {
         return categoriaRepository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException(
                 "Categoria " + id + " não encontrada"));
+    }
+
+    private Tecnico buscarTecnico(Long id) {
+        return tecnicoRepository.findById(id)
+            .orElseThrow(() -> new RecursoNaoEncontradoException(
+                "Técnico " + id + " não encontrado"));
     }
 }

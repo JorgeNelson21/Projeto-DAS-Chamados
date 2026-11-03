@@ -13,7 +13,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import br.com.sistemas.chamados.entity.Prioridade;
+import br.com.sistemas.chamados.entity.StatusChamado;
 import br.com.sistemas.chamados.dto.AlterarStatusRequest;
 import br.com.sistemas.chamados.dto.AtribuirTecnicoRequest;
 import br.com.sistemas.chamados.dto.ChamadoRequest;
@@ -39,8 +46,13 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public List<ChamadoResponse> listar() {
-        return service.listar();
+    public PagedModel<ChamadoResponse> listar(
+        @RequestParam(required = false) StatusChamado status,
+        @RequestParam(required = false) Prioridade prioridade,
+        @RequestParam(required = false) Long clienteId,
+        @PageableDefault(size = 10, sort = "dataAbertura", direction = Sort.Direction.DESC)
+        Pageable pageable) {
+        return new PagedModel<>(service.listar(status, prioridade, clienteId, pageable));
     }
 
     @GetMapping("/{id}")
